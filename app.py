@@ -21,7 +21,9 @@ def init(loop):
     logging.info('server started at http://127.0.0.1:9000...')
     return srv
 
+# get event loop
 loop = asyncio.get_event_loop()
+# execute coroutine
 loop.run_until_complete(init(loop))
 loop.run_forever()
 
