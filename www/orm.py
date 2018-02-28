@@ -99,7 +99,6 @@ class TextField(Field):
         super().__init__(name, 'text', False, default)
 
 
-
 class ModelMetaclass(type):
 
     def __new__(cls, name, bases, attrs):
@@ -148,7 +147,7 @@ class ModelMetaclass(type):
         attrs['__delete__'] = 'delete from `%s` where `%s`=?' % (tableName, primaryKey)
         return type.__new__(cls, name, bases, attrs)
 
-def Model(dict, metaclass=ModelMetaclass):
+class Model(dict, metaclass=ModelMetaclass):
 
     def __init__(self, **kw):
         super().__init__(**kw)
@@ -199,37 +198,35 @@ def Model(dict, metaclass=ModelMetaclass):
             __pool.close()
             await __pool.wait_closed()
 
-#class User(Model):
-#    __table__ = 'users'
-#
-#    id = IntegerField('id')
-#    name = StringField('username')
-#    email = StringField('email')
-#    password = StringField('password')
-#    #id = IntegerField(primary_key=True)
-#    #name = StringField()
-#
-#def test( loop ):
-#    yield from create_pool(host='127.0.0.1', loop = loop, user='root', password='root', db='test' )
-#    u=User(id=12345,email='test22@test.com',passwd='test',name='fengxi')
-#    #u=User(id='123', name='fengxi')
-#    yield from u.save()
-#
-#if __name__ == '__main__':
-#
-#    loop = asyncio.get_event_loop()
-#    loop.run_until_complete( asyncio.wait([test( loop )]) )
-#    loop.close()
-#    if loop.is_closed():
-#        sys.exit(0)
+class User(Model):
+    __table__ = 'users'
+
+    id = IntegerField('id')
+    name = StringField('username')
+    email = StringField('email')
+    password = StringField('password')
+
+def test( loop ):
+    yield from create_pool(host='127.0.0.1', loop = loop, user='root', password='root', db='test' )
+    u=User(id=12345,email='test22@test.com',password='test',name='fengxi')
+    yield from u.save()
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(create_pool(host='127.0.0.1', port=3306, user='root', password='root', db='test', charset='utf8', loop=loop))
-    rs = loop.run_until_complete(select('select * from orm', None))
 
-    print('res: %s' % rs)
+    print(type(Model))
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete( asyncio.wait([test( loop )]) )
     loop.close()
+    if loop.is_closed():
+        sys.exit(0)
+
+#if __name__ == '__main__':
+#    loop = asyncio.get_event_loop()
+#    loop.run_until_complete(create_pool(host='127.0.0.1', port=3306, user='root', password='root', db='test', charset='utf8', loop=loop))
+#    rs = loop.run_until_complete(select('select * from orm', None))
+#
+#    print('res: %s' % rs)
+#    loop.close()
 
     #if loop.is_closed():
     #    sys.exit(0)
