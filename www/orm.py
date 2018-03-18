@@ -141,7 +141,7 @@ class ModelMetaclass(type):
         # `` is used to avoid with sql keyword, or sql execution maybe wrong
         attrs['__select__'] = 'select `%s`, %s from `%s`' % (primaryKey, ', '.join(escaped_fields), tableName)
         attrs['__insert__'] = 'insert into `%s` (%s, `%s`) values (%s)' % (tableName, ', '.join(escaped_fields), \
-                primary_key, create_args_string(len(escaped_fields) + 1))
+                primaryKey, create_args_string(len(escaped_fields) + 1))
         attrs['__update__'] = 'update `%s` set %s where `%s`=?' % (tableName, \
                 ', '.join(map(lambda f: '`%s`=?' % (mappings.get(f).name or f), fields)), primaryKey)
         attrs['__delete__'] = 'delete from `%s` where `%s`=?' % (tableName, primaryKey)
@@ -150,13 +150,13 @@ class ModelMetaclass(type):
 class Model(dict, metaclass=ModelMetaclass):
 
     def __init__(self, **kw):
-        super().__init__(**kw)
+        super(Model, self).__init__(**kw)
 
     def __getattr__(self, key):
         try:
             return self[key]
         except KeyError:
-            raise AttributeError(r"'Model' object has no attribute '%'" % key)
+            raise AttributeError(r"'Model' object has no attribute '%s'" % key)
 
     def __setattr__(self, key, value):
         self[key] = value
@@ -167,9 +167,9 @@ class Model(dict, metaclass=ModelMetaclass):
     def getValueOrDefault(self, key):
         value = getattr(self, key, None)
         if value is None:
-            field = self.__mapping__[key]
+            field = self.__mappings__[key]
             if field.default is not None:
-                value = field.default() if callable(field.default) else filed.default
+                value = field.default() if callable(field.default) else field.default
                 logging.debug('using default value for %s: %s' %(key, str(value)))
                 setattr(self, key, value)
         return value
@@ -190,7 +190,7 @@ class Model(dict, metaclass=ModelMetaclass):
         rows = await execute(self.__insert__, args)
         if rows != 1:
             logging.warn('failed to insert record: affected rows: %s' % rows)
-        await destory_pool()
+        #await destory_pool()
 
     async def destory_pool():
         global __pool
@@ -198,35 +198,35 @@ class Model(dict, metaclass=ModelMetaclass):
             __pool.close()
             await __pool.wait_closed()
 
-class User(Model):
-    __table__ = 'users'
+#class User(Model):
+#    __table__ = 'users'
+#
+#    id = IntegerField('id')
+#    name = StringField('username')
+#    email = StringField('email')
+#    password = StringField('password')
 
-    id = IntegerField('id')
-    name = StringField('username')
-    email = StringField('email')
-    password = StringField('password')
-
-def test( loop ):
-    yield from create_pool(host='127.0.0.1', loop = loop, user='root', password='root', db='test' )
-    u=User(id=12345,email='test22@test.com',password='test',name='fengxi')
-    yield from u.save()
+#def test( loop ):
+#    yield from create_pool(host='127.0.0.1', loop = loop, user='root', password='root', db='test' )
+#    u=User(id=12345,email='test22@test.com',password='test',name='fengxi')
+#    yield from u.save()
+#
+#if __name__ == '__main__':
+#
+#    print(type(Model))
+#    loop = asyncio.get_event_loop()
+#    loop.run_until_complete( asyncio.wait([test( loop )]) )
+#    loop.close()
+#    if loop.is_closed():
+#        sys.exit(0)
 
 if __name__ == '__main__':
-
-    print(type(Model))
     loop = asyncio.get_event_loop()
-    loop.run_until_complete( asyncio.wait([test( loop )]) )
-    loop.close()
-    if loop.is_closed():
-        sys.exit(0)
+    loop.run_until_complete(create_pool(host='127.0.0.1', port=3306, user='root', password='root', db='test', charset='utf8', loop=loop))
+    rs = loop.run_until_complete(select('select * from orm', None))
 
-#if __name__ == '__main__':
-#    loop = asyncio.get_event_loop()
-#    loop.run_until_complete(create_pool(host='127.0.0.1', port=3306, user='root', password='root', db='test', charset='utf8', loop=loop))
-#    rs = loop.run_until_complete(select('select * from orm', None))
-#
-#    print('res: %s' % rs)
-#    loop.close()
+    print('res: %s' % rs)
+    loop.close()
 
     #if loop.is_closed():
     #    sys.exit(0)
